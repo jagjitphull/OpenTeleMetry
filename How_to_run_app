@@ -1,0 +1,68 @@
+#STEPS TO RUN THE APP
+#####################################################
+Prerequisites
+  Python installed (Python 3.6+ recommended).
+  Docker installed (for running Jaeger, Prometheus, and Grafana).
+  Basic knowledge of Linux command-line operations.
+###################################################################
+################################################################
+Install Required Python Packages
+  python3 -m venv venv
+  source venv/bin/activate
+  pip install flask opentelemetry-api opentelemetry-sdk opentelemetry-instrumentation-flask opentelemetry-exporter-otlp opentelemetry-exporter-prometheus prometheus-client
+########################################################
+Create the Flask Application - app.py (It's in the repo).
+########################################################
+
+Set Up Jaeger, Prometheus, and Grafana Using Docker
+  docker run -d --name jaeger \
+  -e COLLECTOR_OTLP_ENABLED=true \
+  -p 6831:6831/udp \
+  -p 6832:6832/udp \
+  -p 14250:14250 \
+  -p 14268:14268 \
+  -p 16686:16686 \
+  -p 4317:4317 \
+  jaegertracing/all-in-one:latest
+######################################################
+
+Run Prometheus  - config file is prometheus.yaml
+###################################  
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'flask-demo'
+    static_configs:
+      - targets: ['localhost:8000']
+#######################################
+RUN PROMETHEUS
+
+docker run -d --name prometheus \
+  -p 9090:9090 \
+  -v $(pwd)/prometheus.yml:/etc/prometheus/prometheus.yml \
+  prom/prometheus
+
+##################################################
+RUN GRAFANA
+docker run -d --name=grafana -p 3000:3000 grafana/grafana
+########################################################
+RUN FLASK APP
+
+python app.py
+############################################################
+Generate and View Traces and Metrics
+curl http://localhost:5000/
+curl http://localhost:5000/process
+
+######################################################
+View Traces in Jaeger
+Go to http://localhost:16686 -> Choose flask-demo -> find traces
+##########################################################
+View Metrics in Grafana
+Create datasource of Prometheus -> create visualization, prometheus query - 'http_requests_total'
+##############################################################################################
+
+  
+
+
