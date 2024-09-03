@@ -1,0 +1,61 @@
+LAB
+
+Lab Exercise: Collecting and Visualizing Metrics with OpenTelemetry, Prometheus, and Grafana
+Objective:
+
+
+In this lab, participants will learn how to instrument a Python application using OpenTelemetry to collect metrics, export them to Prometheus, and visualize the data using Grafana. By the end of this exercise, participants will have hands-on experience in setting up an end-to-end observability pipeline.
+
+1)  pip install opentelemetry-api opentelemetry-sdk opentelemetry-exporter-prometheus prometheus-client
+
+2) Code
+
+
+from opentelemetry import metrics
+from opentelemetry.exporter.prometheus import PrometheusMetricReader
+from opentelemetry.sdk.metrics import MeterProvider
+from prometheus_client import start_http_server
+from time import sleep
+import random
+
+# Step 1: Set up Prometheus exporter
+reader = PrometheusMetricReader()
+meter_provider = MeterProvider(metric_readers=[reader])
+metrics.set_meter_provider(meter_provider)
+
+# Step 2: Create a Meter
+meter = meter_provider.get_meter(__name__)
+
+# Step 3: Create a Counter metric
+request_counter = meter.create_counter(
+    "http_requests_total",
+    description="Total number of HTTP requests",
+    unit="requests",
+)
+
+# Step 4: Start the Prometheus server to export metrics
+start_http_server(8000)  # Prometheus will scrape metrics from this port
+
+# Step 5: Simulate some HTTP requests
+while True:
+    sleep(random.uniform(0.5, 2.0))  # Simulate variable request intervals
+    request_counter.add(1, {"method": "POST", "endpoint": "/api/data"})
+    print("Simulated HTTP POST request recorded")
+
+3) Prometheus
+
+global:
+  scrape_interval: 5s  # Scrape metrics every 5 seconds
+
+scrape_configs:
+  - job_name: 'python-app'
+    static_configs:
+      - targets: ['localhost:8000']  # Target the Python application metrics endpoint
+
+4) ./prometheus --config.file=prometheus.yml
+
+To be done -
+
+Step 5: Set Up Grafana for Visualization
+
+metric - http_requests_total
